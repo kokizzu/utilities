@@ -34,74 +34,148 @@ func makeCheckSetter(prog *prog) *groupsetter.List[ContentCheck] {
 
 	s := groupsetter.NewList(&prog.contentChecks)
 
-	s.AddByPosParam(
-		paramNameMatch,
-		psetter.Regexp{
-			Value: &s.InterimVal.matchPattern,
-		},
+	s.AddByPosParam(paramNameMatch,
+		psetter.Regexp{Value: &s.InterimVal.matchPattern},
 		"the pattern to search files for."+
-			" If a file is found matching this pattern")
+			" If a directory is found with a file having content matching"+
+			" this pattern and the other checks, then the directory is added"+
+			" to the list of 'found' directories")
 
-	s.AddByNameParam(
-		paramNameName,
-		psetter.String[string]{
-			Value: &s.InterimVal.name,
-		},
+	s.AddByNameParam(paramNameName,
+		psetter.String[string]{Value: &s.InterimVal.name},
 		"a name to give to the check")
 
-	s.AddByNameParam(
-		paramNameFile,
-		psetter.Regexp{
-			Value: &s.InterimVal.filenamePattern,
-		},
+	s.AddByNameParam(paramNameFile,
+		psetter.Regexp{Value: &s.InterimVal.filenamePattern},
 		"limit the files to be checked."+
 			" Only files whose name matches this pattern will be checked",
 		param.AltNames("filename", "file"))
 
-	s.AddByNameParam(
-		paramNameNotFile,
-		psetter.Regexp{
-			Value: &s.InterimVal.filenameSkipPattern,
-		},
+	s.AddByNameParam(paramNameNotFile,
+		psetter.Regexp{Value: &s.InterimVal.filenameSkipPattern},
 		"limit the files to be checked."+
-			" Only files whose name does not match"+
-			" this pattern will be checked",
+			" Only files whose name doesn't match this pattern will be checked",
 		param.AltNames("not-filename", "not-file"))
 
-	s.AddByNameParam(
-		paramNameSkip,
-		psetter.Regexp{
-			Value: &s.InterimVal.skipPattern,
-		},
+	s.AddByNameParam(paramNameSkip,
+		psetter.Regexp{Value: &s.InterimVal.skipPattern},
 		"lines matching this pattern are ignored"+
 			" regardless of whether they would otherwise match.",
 		param.AltNames("skip"))
 
-	s.AddByNameParam(
-		paramNameStop,
-		psetter.Regexp{
-			Value: &s.InterimVal.stopPattern,
-		},
+	s.AddByNameParam(paramNameStop,
+		psetter.Regexp{Value: &s.InterimVal.stopPattern},
 		"stop further checking."+
-			" Once a line is found matching this pattern"+
-			" no more lines in the file will be checked"+
-			" by this checker.",
+			" Once a line is found matching this pattern no more lines"+
+			" in the file will be checked by this checker.",
 		param.AltNames("stop"))
 
 	return s
 }
 
+// addActionParams adds the parameters concerned with the actions to perform
+// when a matching directory is found. This includes the parameters which
+// specify the arguments to be passed to the various commands that can be
+// invoked.
+func addActionParams(ps *param.PSet, prog *prog) {
+	ps.Add("actions",
+		psetter.EnumMap[string]{
+			Value: &prog.actions,
+			AllowedVals: psetter.AllowedVals[string]{
+				buildAct:    "run 'go build' in the directory",
+				installAct:  "run 'go install' in the directory",
+				testAct:     "run 'go test' in the directory",
+				generateAct: "run 'go generate' in the directory",
+				printAct:    "print the directory name",
+				contentAct:  "print any matching content",
+				filenameAct: "print files with matching content",
+			},
+			Aliases: psetter.Aliases[string]{
+				"show": {contentAct},
+				"gb":   {generateAct, buildAct},
+			},
+		},
+		"set the actions to perform when a Go directory matching"+
+			" the supplied criteria is discovered",
+		param.AltNames("a", "do"),
+		param.Attrs(param.CommandLineOnly),
+	)
+
+	ps.Add("no-action", psetter.Bool{Value: &prog.noAction},
+		"this will stop any action from happening. Instead the action"+
+			" functions will just report what they would have done.",
+		param.AltNames("do-nothing"),
+		param.Attrs(param.CommandLineOnly|param.DontShowInStdUsage),
+	)
+
+	ps.Add("generate-arg",
+		psetter.StrListAppender[string]{Value: &prog.generateArgs},
+		"add to the arguments to be given to the go generate command",
+		param.AltNames("generate-args", "args-generate",
+			"gen-args", "g-args", "g-arg"),
+		param.ValueName("arg"),
+		param.PostAction(
+			paction.SetMapValIf(prog.actions, generateAct, true,
+				paction.IsACommandLineParam)),
+		param.Attrs(param.DontShowInStdUsage),
+	)
+
+	ps.Add("install-arg",
+		psetter.StrListAppender[string]{Value: &prog.installArgs},
+		"add to the arguments to be given to the go install command",
+		param.AltNames("install-args", "args-install",
+			"inst-args", "i-args", "i-arg"),
+		param.ValueName("arg"),
+		param.PostAction(
+			paction.SetMapValIf(prog.actions, installAct, true,
+				paction.IsACommandLineParam)),
+		param.Attrs(param.DontShowInStdUsage),
+	)
+
+	ps.Add("test-arg",
+		psetter.StrListAppender[string]{Value: &prog.testArgs},
+		"add to the arguments to be given to the go test command",
+		param.AltNames("test-args", "args-test",
+			"t-args", "t-arg"),
+		param.ValueName("arg"),
+		param.PostAction(
+			paction.SetMapValIf(prog.actions, testAct, true,
+				paction.IsACommandLineParam)),
+		param.Attrs(param.DontShowInStdUsage),
+	)
+
+	ps.Add("build-arg",
+		psetter.StrListAppender[string]{Value: &prog.buildArgs},
+		"add to the arguments to be given to the go build command",
+		param.AltNames("build-args", "args-build",
+			"b-args", "b-arg"),
+		param.ValueName("arg"),
+		param.PostAction(
+			paction.SetMapValIf(prog.actions, buildAct, true,
+				paction.IsACommandLineParam)),
+		param.Attrs(param.DontShowInStdUsage),
+	)
+
+	// set the default program action to print if no other action is
+	// specified
+	ps.AddFinalCheck(func() error {
+		if len(prog.actions) == 0 {
+			prog.actions[printAct] = true
+		}
+
+		return nil
+	})
+}
+
 // addParams will add parameters to the passed ParamSet
 func addParams(prog *prog) func(ps *param.PSet) error {
 	return func(ps *param.PSet) error {
-		dirProvisos := filecheck.DirExists()
-
 		ps.Add(paramNameDir,
 			psetter.PathnameListAppender{
 				Value:       &prog.baseDirs,
-				Expectation: dirProvisos,
+				Expectation: filecheck.DirExists(),
 			},
-			"set the name of the directory to search from."+
+			"set the names of the directories to search from."+
 				" If no directories are given, the current directory is"+
 				" used. This parameter may be given more than once, each"+
 				" time it is used the directory will be added to the"+
@@ -110,8 +184,7 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 			param.Attrs(param.CommandLineOnly),
 		)
 
-		checkSetter := makeCheckSetter(prog)
-		ps.Add(paramNameCheck, checkSetter,
+		ps.Add(paramNameCheck, makeCheckSetter(prog),
 			"set the additional checks to perform.",
 			param.Attrs(param.CommandLineOnly),
 		)
@@ -121,74 +194,14 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 			"When reporting the checks that have passed"+
 				" also show the named check ")
 
-		ps.Add("actions",
-			psetter.EnumMap[string]{
-				Value: &prog.actions,
-				AllowedVals: psetter.AllowedVals[string]{
-					buildAct:    "run 'go build' in the directory",
-					installAct:  "run 'go install' in the directory",
-					testAct:     "run 'go test' in the directory",
-					generateAct: "run 'go generate' in the directory",
-					printAct:    "print the directory name",
-					contentAct:  "print any matching content",
-					filenameAct: "print files with matching content",
-				},
-			},
-			"set the actions to perform when a Go directory matching"+
-				" the supplied criteria is discovered",
-			param.AltNames("a", "do"),
-			param.Attrs(param.CommandLineOnly),
-		)
-
-		ps.Add("generate-arg",
-			psetter.StrListAppender[string]{Value: &prog.generateArgs},
-			"set the arguments to be given to the go generate command",
-			param.AltNames("generate-args", "args-generate",
-				"gen-args", "g-args", "g-arg"),
-			param.PostAction(
-				paction.SetMapValIf(prog.actions, generateAct, true,
-					paction.IsACommandLineParam)),
-			param.Attrs(param.DontShowInStdUsage),
-		)
-
-		ps.Add("install-arg",
-			psetter.StrListAppender[string]{Value: &prog.installArgs},
-			"set the arguments to be given to the go install command",
-			param.AltNames("install-args", "args-install",
-				"inst-args", "i-args", "i-arg"),
-			param.PostAction(
-				paction.SetMapValIf(prog.actions, installAct, true,
-					paction.IsACommandLineParam)),
-			param.Attrs(param.DontShowInStdUsage),
-		)
-
-		ps.Add("test-arg",
-			psetter.StrListAppender[string]{Value: &prog.testArgs},
-			"set the arguments to be given to the go test command",
-			param.AltNames("test-args", "args-test",
-				"t-args", "t-arg"),
-			param.PostAction(
-				paction.SetMapValIf(prog.actions, testAct, true,
-					paction.IsACommandLineParam)),
-			param.Attrs(param.DontShowInStdUsage),
-		)
-
-		ps.Add("build-arg",
-			psetter.StrListAppender[string]{Value: &prog.buildArgs},
-			"set the arguments to be given to the go build command",
-			param.AltNames("build-args", "args-build",
-				"b-args", "b-arg"),
-			param.PostAction(
-				paction.SetMapValIf(prog.actions, buildAct, true,
-					paction.IsACommandLineParam)),
-			param.Attrs(param.DontShowInStdUsage),
-		)
+		addActionParams(ps, prog)
 
 		ps.Add("package-names",
 			psetter.StrList[string]{Value: &prog.pkgNames},
 			"set the names of packages to be matched. If this is not set then"+
 				" any package name will be matched",
-			param.AltNames("package", "pkg"),
+			param.AltNames("package-name", "package", "pkg"),
+			param.ValueName("package"),
 		)
 
 		ps.Add("having-files",
@@ -197,6 +210,7 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 				" listed files must be present for the directory to be"+
 				" matched.",
 			param.AltNames("having", "with"),
+			param.ValueName("filename"),
 			param.Attrs(param.CommandLineOnly),
 		)
 
@@ -206,6 +220,7 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 				" the listed files may be absent for the directory to be"+
 				" matched.",
 			param.AltNames("not-having", "without"),
+			param.ValueName("filename"),
 			param.Attrs(param.CommandLineOnly),
 		)
 
@@ -218,7 +233,9 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 			param.Attrs(param.CommandLineOnly|param.DontShowInStdUsage),
 			param.PostAction(
 				func(_ location.L, _ *param.BaseParam, _ []string) error {
-					prog.contentChecks = append(prog.contentChecks, buildTagChecks)
+					prog.contentChecks = append(prog.contentChecks,
+						buildTagChecks)
+
 					return nil
 				}),
 			param.SeeAlso(paramNameCheck, paramNameHavingGoGenerate),
@@ -241,32 +258,13 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 			param.SeeNote(noteNameContentChecks),
 		)
 
-		ps.Add("no-action", psetter.Bool{Value: &prog.noAction},
-			"this will stop any action from happening. Instead the action"+
-				" functions will just report what they would have done.",
-			param.AltNames("do-nothing"),
-			param.Attrs(param.CommandLineOnly|param.DontShowInStdUsage),
+		ps.Add("skip-dirs",
+			psetter.StrListAppender[string]{Value: &prog.skipDirs},
+			"exclude directories with these names"+
+				" and any of their sub-directories.",
+			param.AltNames("skip-dir"),
+			param.ValueName("name"),
 		)
-
-		var skipDir string
-
-		ps.Add("skip-dir", psetter.String[string]{Value: &skipDir},
-			"exclude a directory with this name and skip any sub-directories."+
-				" This parameter may be given more than once, each"+
-				" time it is used the name will be added to the"+
-				" list of directories to skip.",
-			param.PostAction(paction.AppendStringVal(&prog.skipDirs, &skipDir)),
-		)
-
-		// set the default program action to print if no other action is
-		// specified
-		ps.AddFinalCheck(func() error {
-			if len(prog.actions) == 0 {
-				prog.actions[printAct] = true
-			}
-
-			return nil
-		})
 
 		// set the default ContentCheck names
 		ps.AddFinalCheck(func() error {
