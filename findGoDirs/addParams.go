@@ -205,7 +205,7 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 		)
 
 		ps.Add("having-files",
-			psetter.StrList[string]{Value: &prog.filesWanted},
+			psetter.StrListAppender[string]{Value: &prog.filesWanted},
 			"give a list of files that the directory must contain. All the"+
 				" listed files must be present for the directory to be"+
 				" matched.",
@@ -214,13 +214,32 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 			param.Attrs(param.CommandLineOnly),
 		)
 
-		ps.Add("missing-files",
-			psetter.StrList[string]{Value: &prog.filesMissing},
+		ps.Add("not-having-files",
+			psetter.StrListAppender[string]{Value: &prog.filesMissing},
 			"give a list of files that the directory may not contain. Any of"+
 				" the listed files may be absent for the directory to be"+
 				" matched.",
-			param.AltNames("not-having", "without"),
+			param.AltNames("not-having", "without", "missing-files"),
 			param.ValueName("filename"),
+			param.Attrs(param.CommandLineOnly),
+		)
+
+		ps.Add("having-files-like",
+			psetter.RegexpListAppender{Value: &prog.fileREsWanted},
+			"give a list of patterns that some file in"+
+				" the directory must match. All the"+
+				" listed patterns must be matched for the directory to be"+
+				" matched.",
+			param.AltNames("with-files-like"),
+			param.Attrs(param.CommandLineOnly),
+		)
+
+		ps.Add("not-having-files-like",
+			psetter.RegexpListAppender{Value: &prog.fileREsMissing},
+			"give a list of files that the directory may not contain. Any of"+
+				" the listed files may be absent for the directory to be"+
+				" matched.",
+			param.AltNames("without-files-like"),
 			param.Attrs(param.CommandLineOnly),
 		)
 

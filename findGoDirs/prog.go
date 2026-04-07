@@ -1,6 +1,10 @@
 package main
 
-import "github.com/nickwells/verbose.mod/verbose"
+import (
+	"regexp"
+
+	"github.com/nickwells/verbose.mod/verbose"
+)
 
 const (
 	printAct    = "print"
@@ -19,13 +23,15 @@ type (
 
 // prog holds the parameters and current status of the program
 type prog struct {
-	baseDirs      []string
-	skipDirs      []string
-	pkgNames      []string
-	filesWanted   []string
-	filesMissing  []string
-	contentChecks []ContentCheck
-	dirContent    dirToContentMap
+	baseDirs       []string
+	skipDirs       []string
+	pkgNames       []string
+	filesWanted    []string
+	filesMissing   []string
+	fileREsWanted  []*regexp.Regexp
+	fileREsMissing []*regexp.Regexp
+	contentChecks  []ContentCheck
+	dirContent     dirToContentMap
 
 	noAction      bool
 	showCheckName bool

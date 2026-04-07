@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -264,7 +265,17 @@ func (prog *prog) onMatchDo(dir string) {
 	}
 
 	if len(prog.filesMissing) > 0 && hasEntries(prog.filesMissing) {
-		verbose.Println(intro, " Skipping: has unwanted files")
+		verbose.Println(intro, " Skipping: not missing any files")
+		return
+	}
+
+	if !hasEntriesLike(prog.fileREsWanted) {
+		verbose.Println(intro, " Skipping: missing files like ...")
+		return
+	}
+
+	if len(prog.fileREsMissing) > 0 && hasEntriesLike(prog.fileREsMissing) {
+		verbose.Println(intro, " Skipping: not missing files like ...")
 		return
 	}
 
@@ -346,11 +357,47 @@ func hasEntries(entries []string) bool {
 	return true
 }
 
+// hasEntriesLike will check to see if there is at least one entry in the
+// current directory for each of the supplied regexp's. It will return false
+// if any of them are missing. It will only return true if there is a match
+// for all the supplied regexp's.
+func hasEntriesLike(entryREs []*regexp.Regexp) bool {
+	if len(entryREs) == 0 {
+		return true
+	}
+
+	dirEntries, err := os.ReadDir(".")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot read the directory:", err)
+		return false
+	}
+
+	for _, re := range entryREs {
+		if !entryMatches(re, dirEntries) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // entryFound will return true if the name is in the list of directory
 // entries
 func entryFound(name string, entries []fs.DirEntry) bool {
 	for _, f := range entries {
 		if f.Name() == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+// entryFound will return true if the name is in the list of directory
+// entries
+func entryMatches(re *regexp.Regexp, entries []fs.DirEntry) bool {
+	for _, f := range entries {
+		if re.MatchString(f.Name()) {
 			return true
 		}
 	}
