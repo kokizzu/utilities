@@ -130,7 +130,7 @@ func TestHasFiles(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if hasEntries(tc.filesWanted) != tc.expResult {
+		if ok, _ := hasEntries(tc.filesWanted); ok != tc.expResult {
 			t.Log(tc.IDStr())
 			t.Errorf("\t: unexpected result\n")
 		}

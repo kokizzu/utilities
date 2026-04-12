@@ -80,7 +80,7 @@ func makeCheckSetter(prog *prog) *groupsetter.List[ContentCheck] {
 func addActionParams(ps *param.PSet, prog *prog) {
 	ps.Add("actions",
 		psetter.EnumMap[string]{
-			Value: &prog.actions,
+			Value: &prog.doAction,
 			AllowedVals: psetter.AllowedVals[string]{
 				buildAct:    "run 'go build' in the directory",
 				installAct:  "run 'go install' in the directory",
@@ -115,7 +115,7 @@ func addActionParams(ps *param.PSet, prog *prog) {
 			"gen-args", "g-args", "g-arg"),
 		param.ValueName("arg"),
 		param.PostAction(
-			paction.SetMapValIf(prog.actions, generateAct, true,
+			paction.SetMapValIf(prog.doAction, generateAct, true,
 				paction.IsACommandLineParam)),
 		param.Attrs(param.DontShowInStdUsage),
 	)
@@ -127,7 +127,7 @@ func addActionParams(ps *param.PSet, prog *prog) {
 			"inst-args", "i-args", "i-arg"),
 		param.ValueName("arg"),
 		param.PostAction(
-			paction.SetMapValIf(prog.actions, installAct, true,
+			paction.SetMapValIf(prog.doAction, installAct, true,
 				paction.IsACommandLineParam)),
 		param.Attrs(param.DontShowInStdUsage),
 	)
@@ -139,7 +139,7 @@ func addActionParams(ps *param.PSet, prog *prog) {
 			"t-args", "t-arg"),
 		param.ValueName("arg"),
 		param.PostAction(
-			paction.SetMapValIf(prog.actions, testAct, true,
+			paction.SetMapValIf(prog.doAction, testAct, true,
 				paction.IsACommandLineParam)),
 		param.Attrs(param.DontShowInStdUsage),
 	)
@@ -151,7 +151,7 @@ func addActionParams(ps *param.PSet, prog *prog) {
 			"b-args", "b-arg"),
 		param.ValueName("arg"),
 		param.PostAction(
-			paction.SetMapValIf(prog.actions, buildAct, true,
+			paction.SetMapValIf(prog.doAction, buildAct, true,
 				paction.IsACommandLineParam)),
 		param.Attrs(param.DontShowInStdUsage),
 	)
@@ -159,8 +159,8 @@ func addActionParams(ps *param.PSet, prog *prog) {
 	// set the default program action to print if no other action is
 	// specified
 	ps.AddFinalCheck(func() error {
-		if len(prog.actions) == 0 {
-			prog.actions[printAct] = true
+		if len(prog.doAction) == 0 {
+			prog.doAction[printAct] = true
 		}
 
 		return nil
@@ -292,6 +292,21 @@ func addParams(prog *prog) func(ps *param.PSet) error {
 					cc.name = fmt.Sprintf("check-%d", i+1)
 					prog.contentChecks[i] = cc
 				}
+			}
+
+			return nil
+		})
+
+		// gather any trailing directories
+		ps.AddFinalCheck(func() error {
+			dirProvisos := filecheck.DirExists()
+
+			for _, dirName := range ps.TrailingParams() {
+				if err := dirProvisos.StatusCheck(dirName); err != nil {
+					return fmt.Errorf("bad directory (at end): %s", err)
+				}
+
+				prog.baseDirs = append(prog.baseDirs, dirName)
 			}
 
 			return nil
