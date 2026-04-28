@@ -279,7 +279,7 @@ func (g *gosh) checkScripts() {
 		return
 	}
 
-	g.addError("no code", errors.New("there is no code to run"))
+	g.addError("no code", errors.New("there is no Go code to be run"))
 }
 
 // reportErrors checks if there are errors to report and if there are it
