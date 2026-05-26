@@ -9,7 +9,7 @@ require (
 	github.com/nickwells/english.mod v1.2.10
 	github.com/nickwells/errutil.mod v1.2.24
 	github.com/nickwells/filecheck.mod v1.2.13
-	github.com/nickwells/gogen.mod v1.11.42
+	github.com/nickwells/gogen.mod v1.11.43
 	github.com/nickwells/location.mod v1.2.37
 	github.com/nickwells/mathutil.mod/v2 v2.5.11
 	github.com/nickwells/snippet.mod v1.2.20
@@ -17,17 +17,17 @@ require (
 	github.com/nickwells/timer.mod v1.2.7 // indirect
 	github.com/nickwells/twrap.mod v1.5.14
 	github.com/nickwells/units.mod/v2 v2.3.1
-	github.com/nickwells/unitsetter.mod/v4 v4.2.52
-	github.com/nickwells/verbose.mod v1.1.23
-	github.com/nickwells/versionparams.mod v1.2.27
+	github.com/nickwells/unitsetter.mod/v4 v4.2.53
+	github.com/nickwells/verbose.mod v1.1.24
+	github.com/nickwells/versionparams.mod v1.2.28
 	github.com/nickwells/xdg.mod v1.0.12
 	golang.org/x/sys v0.45.0
 )
 
 require (
 	github.com/nickwells/col.mod/v6 v6.1.1
-	github.com/nickwells/groupsetter.mod v1.0.7
-	github.com/nickwells/param.mod/v7 v7.2.3
+	github.com/nickwells/groupsetter.mod v1.0.8
+	github.com/nickwells/param.mod/v7 v7.2.4
 	github.com/nickwells/tempus.mod v1.2.11
 )
 
