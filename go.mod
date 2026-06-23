@@ -16,12 +16,12 @@ require (
 	github.com/nickwells/testhelper.mod/v2 v2.6.1
 	github.com/nickwells/timer.mod v1.2.7 // indirect
 	github.com/nickwells/twrap.mod v1.5.14
-	github.com/nickwells/units.mod/v2 v2.3.1
-	github.com/nickwells/unitsetter.mod/v4 v4.2.53
+	github.com/nickwells/units.mod/v2 v2.4.0
+	github.com/nickwells/unitsetter.mod/v4 v4.4.0
 	github.com/nickwells/verbose.mod v1.1.24
 	github.com/nickwells/versionparams.mod v1.2.28
 	github.com/nickwells/xdg.mod v1.0.12
-	golang.org/x/sys v0.45.0
+	golang.org/x/sys v0.46.0
 )
 
 require (
@@ -36,6 +36,6 @@ require github.com/nickwells/strdist.mod/v2 v2.1.2 // indirect
 require (
 	github.com/nickwells/fileparse.mod v1.1.39 // indirect
 	github.com/nickwells/pager.mod v1.1.0 // indirect
-	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
-	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+	golang.org/x/term v0.44.0 // indirect
 )
