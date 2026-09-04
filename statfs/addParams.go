@@ -16,19 +16,24 @@ func addParams(prog *prog) param.PSetOptFunc {
 				Value: &prog.displayUnits,
 				F:     prog.dataFamily,
 			},
-			"set the units in which to display the results")
+			"set the units in which to display the results",
+			param.AltNames("unit", "u"),
+		)
 
 		ps.Add("no-label",
 			psetter.Bool{
 				Value: &noLabel,
 			},
-			"show the results without labels")
+			"show the results without labels",
+		)
 
 		ps.Add("table",
 			psetter.Bool{
 				Value: &showAsTable,
 			},
-			"show the results in a table rather than on a line")
+			"show the results in a table rather than on a line",
+			param.AltNames("tbl", "t"),
+		)
 
 		ps.Add("show",
 			psetter.EnumList[string]{
@@ -39,7 +44,9 @@ func addParams(prog *prog) param.PSetOptFunc {
 					check.SliceLength[[]string](check.ValGT(0)),
 				},
 			},
-			"choose which information to show about the file system")
+			"choose which information to show about the file system",
+			param.AltNames("field", "fields"),
+		)
 
 		return nil
 	}
